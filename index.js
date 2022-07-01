@@ -36,6 +36,7 @@ function generateMultiSheets(configs, xlsx) {
 	var i = 1;
 	configs.forEach(function(config) {
 		config.name = config.name ? config.name : ('sheet'+i);
+		config.sheetname = 'sheet'+i;
 		i++;
     var sheet = new Sheet(config, xlsx, shareStrings, convertedShareStrings);
 		sheet.generate();
@@ -56,7 +57,7 @@ function generateRel(configs,xlsx) {
 	var workbook = relFront;
 	var i = 1;
 	configs.forEach( function(config) {
-		workbook += '<Relationship Id="rId' + i + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/' + config.name + '.xml"/>';
+		workbook += '<Relationship Id="rId' + i + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/' + config.sheetname + '.xml"/>';
 		i++;
 	});
 	workbook += relBack;

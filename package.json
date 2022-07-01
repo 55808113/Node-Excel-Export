@@ -1,12 +1,12 @@
 {
-  "name": "excel-export",
+  "name": "@sunxdd/excel-export",
   "version": "0.5.1",
   "description": "Simple data set export to Excel xlsx file",
   "main": "index.js",
   "scripts": {
     "test": "mocha test/main"
   },
-  "repository": "https://github.com/functionscope/Node-Excel-Export",
+  "repository": "https://github.com/55808113/Node-Excel-Export",
   "keywords": [
     "Excel",
     "xlsx"

@@ -24,7 +24,7 @@ Sheet.prototype.generate = function(){
 	styleIndex,
   self = this,
 	k;
-	config.fileName = 'xl/worksheets/' + (config.name || "sheet").replace(/[*?\]\[\/\/]/g, '') + '.xml';
+	config.fileName = 'xl/worksheets/' + (config.sheetname || "sheet").replace(/[*?\]\[\/\/]/g, '') + '.xml';
 	if (config.stylesXmlFile) {
 		var path = config.stylesXmlFile;
 		var styles = null;
