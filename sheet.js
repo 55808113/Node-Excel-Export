@@ -41,7 +41,7 @@ Sheet.prototype.generate = function(){
 		colStyleIndex = cols[k].captionStyleIndex || 0;
 		row += addStringCell(self, getColumnLetter(k + 1) + 1, cols[k].caption, colStyleIndex);
 		if (cols[k].width) {
-			colsWidth += '<col customWidth = "1" width="' + cols[k].width + '" max = "' + (k + 1) + '" min="' + (k + 1) + '"/>';
+			colsWidth += '<x:col customWidth = "1" width="' + cols[k].width + '" max="' + (k + 1) + '" min="' + (k + 1) + '"/>';
 		}
 	}
 	row += '</x:row>';
@@ -86,10 +86,11 @@ Sheet.prototype.generate = function(){
 		row += '</x:row>';
 		rows += row;
 	}
+	var _sheetFront = sheetFront
 	if (colsWidth !== "") {
-		sheetFront += '<cols>' + colsWidth + '</cols>';
+		_sheetFront += '<x:cols>' + colsWidth + '</x:cols>';
 	}
-	xlsx.file(config.fileName, sheetFront + '<x:sheetData>' + rows + '</x:sheetData>' + sheetBack);
+	xlsx.file(config.fileName, _sheetFront + '<x:sheetData>' + rows + '</x:sheetData>' + sheetBack);
 }
 
 module.exports = Sheet;
