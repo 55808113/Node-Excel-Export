@@ -1,6 +1,6 @@
 {
   "name": "@sunxdd/excel-export",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Simple data set export to Excel xlsx file",
   "main": "index.js",
   "scripts": {

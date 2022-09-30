@@ -1,7 +1,7 @@
 var sheetFront = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><x:worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' 
 		+ ' <x:sheetPr/><x:sheetViews><x:sheetView tabSelected="1" workbookViewId="0" /></x:sheetViews>' 
 		+ ' <x:sheetFormatPr defaultRowHeight="15" />';
-var sheetBack =' <x:pageMargins left="0.75" right="0.75" top="0.75" bottom="0.5" header="0.5" footer="0.75" />'
+var sheetBack = ' <x:pageMargins left="0.75" right="0.75" top="0.75" bottom="0.5" header="0.5" footer="0.75" />'
 		+ ' <x:headerFooter /></x:worksheet>';
     
 var fs = require('fs');
@@ -16,11 +16,13 @@ function Sheet(config, xlsx, shareStrings, convertedShareStrings){
 Sheet.prototype.generate = function(){
   var config = this.config, xlsx = this.xlsx;
 	var cols = config.cols,
+	mergeCells = [],
 	data = config.rows,
 	colsLength = cols.length,
 	rows = "",
 	row = "",
 	colsWidth = "",
+	sheetmergeCells = [],
 	styleIndex,
   self = this,
 	k;
@@ -46,6 +48,35 @@ Sheet.prototype.generate = function(){
 	}
 	row += '</x:row>';
 	rows += row;
+	//如果合并字段存在，判断当前字段是合并字段
+	if (config.mergeCells){
+		for (i = 0; i < config.mergeCells.length; i++) {
+			var mergeCell = config.mergeCells[i];
+			var mergeField=undefined,premiseField=undefined;
+			//通过合并的字段名称。转换为索引号。
+			for (k = 0; k < colsLength; k++) {
+				if (mergeCell.mergeField==cols[k].name){
+					mergeField = k;
+				}
+				if (mergeCell.premiseField==cols[k].name){
+					premiseField = k;
+				}
+				if (mergeField!=undefined&&premiseField!=undefined){
+					mergeCells.push({
+						mergeField: mergeField,
+						premiseField: premiseField,
+						perMergeValue:undefined,//前合并字段值
+						perPremiseValue:undefined,//前主键字段值
+						curMergeValue:undefined,//当前合并字段值
+						curPremiseValue:undefined,//当前主键字段值
+						span:1//跨度默认为1
+					})
+					break;
+				}
+			}
+
+		}
+	}
 
 	//fill in data
 	var i, j, r, cellData, currRow, cellType, dataLength = data.length;
@@ -54,7 +85,44 @@ Sheet.prototype.generate = function(){
 		r = data[i],
 		currRow = i + 2;
 		row = '<x:row r="' + currRow + '" spans="1:' + colsLength + '">';
+
+		for (var l = 0; l < mergeCells.length; l++) {
+			var mergeCell = mergeCells[l];
+			var flag = true;
+			mergeCell.curMergeValue = r[mergeCell.mergeField];
+			if (mergeCell.premiseField!=undefined){
+				mergeCell.curPremiseValue = r[mergeCell.premiseField];
+				flag = false;
+			}
+			if (mergeCell.perMergeValue == mergeCell.curMergeValue && (flag || mergeCell.perPremiseValue == mergeCell.curPremiseValue)) {
+				mergeCell.span += 1;
+			} else {
+				var columnLetter = getColumnLetter(mergeCell.mergeField + 1);
+				var startCell = (currRow - mergeCell.span);
+				var endCell = currRow - 1;
+				if (endCell!=startCell){
+					sheetmergeCells.push({
+						startCell:columnLetter + startCell,
+						endCell:columnLetter + endCell
+					})
+				}
+				mergeCell.span = 1;
+				mergeCell.perMergeValue = mergeCell.curMergeValue;
+				if (!flag) {
+					mergeCell.perPremiseValue = mergeCell.curPremiseValue;
+				}
+			}
+		}
 		for (j = 0; j < colsLength; j++) {
+			var flag = true;
+			for (var l = 0; l < mergeCells.length; l++) {
+				var mergeCell = mergeCells[l];
+				if (mergeCell.mergeField==j&&mergeCell.span>1){
+					flag = false;
+					break;
+				}
+			}
+			if (!flag) continue;
 			styleIndex = null;
 			cellData = r[j];
 			cellType = cols[j].type;
@@ -69,18 +137,20 @@ Sheet.prototype.generate = function(){
 				cellType = e.cellType;
 				delete e;
 			}
+			var columnletter = getColumnLetter(j + 1);
+
 			switch (cellType) {
 			case 'number':
-				row += addNumberCell(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
+				row += addNumberCell(columnletter + currRow, cellData, styleIndex);
 				break;
 			case 'date':
-				row += addDateCell(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
+				row += addDateCell(columnletter + currRow, cellData, styleIndex);
 				break;
 			case 'bool':
-				row += addBoolCell(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
+				row += addBoolCell(columnletter + currRow, cellData, styleIndex);
 				break;
 			default:
-				row += addStringCell(self, getColumnLetter(j + 1) + currRow, cellData, styleIndex);
+				row += addStringCell(self, columnletter + currRow, cellData, styleIndex);
 			}
 		}
 		row += '</x:row>';
@@ -90,7 +160,16 @@ Sheet.prototype.generate = function(){
 	if (colsWidth !== "") {
 		_sheetFront += '<x:cols>' + colsWidth + '</x:cols>';
 	}
-	xlsx.file(config.fileName, _sheetFront + '<x:sheetData>' + rows + '</x:sheetData>' + sheetBack);
+	var _sheetMergeCellString = "";
+	if (sheetmergeCells.length>0){
+		_sheetMergeCellString +=' <x:mergeCells count="'+sheetmergeCells.length+'">';
+		for (var l = 0; l < sheetmergeCells.length; l++) {
+			var sheetmergeCell = sheetmergeCells[l];
+			_sheetMergeCellString +='<x:mergeCell ref="'+sheetmergeCell.startCell+':'+sheetmergeCell.endCell+'"/>';
+		}
+		_sheetMergeCellString +='</x:mergeCells>';
+	}
+	xlsx.file(config.fileName, _sheetFront + '<x:sheetData>' + rows + '</x:sheetData>' + _sheetMergeCellString + sheetBack);
 }
 
 module.exports = Sheet;
