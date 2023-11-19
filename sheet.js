@@ -16,7 +16,7 @@ function Sheet(config, xlsx, shareStrings, convertedShareStrings){
 Sheet.prototype.generate = function(){
   var config = this.config, xlsx = this.xlsx;
 	var cols = config.cols,
-	mergeCells = [],
+	mergeFields = [],
 	data = config.rows,
 	colsLength = cols.length,
 	rows = "",
@@ -35,23 +35,30 @@ Sheet.prototype.generate = function(){
 			xlsx.file("xl/styles.xml", styles);
 		}
 	}
-
-	//first row for column caption
-	row = '<x:row r="1" spans="1:' + colsLength + '">';
-	var colStyleIndex;
-	for (k = 0; k < colsLength; k++) {
-		colStyleIndex = cols[k].captionStyleIndex || 0;
-		row += addStringCell(self, getColumnLetter(k + 1) + 1, cols[k].caption, colStyleIndex);
-		if (cols[k].width) {
-			colsWidth += '<x:col customWidth = "1" width="' + cols[k].width + '" max="' + (k + 1) + '" min="' + (k + 1) + '"/>';
+	//开始的行号===============
+	var START_ROW = 2
+	//是否显示标题，显示标题开始行从3开始
+	if (config.title){
+		var titleRow = 1;
+		//中间对齐
+		var titleStyleIndex = 1
+		row = '<x:row r="' + titleRow + '" spans="1:' + colsLength + '">';
+		row += addStringCell(self, getColumnLetter(0 + 1) + titleRow, config.title, titleStyleIndex);
+		row += '</x:row>';
+		rows += row;
+		//合并单元格,列大于1时才合并单元格
+		if (colsLength>1){
+			sheetmergeCells.push({
+				startCell: getColumnLetter(0 + 1) + titleRow,
+				endCell: getColumnLetter(colsLength) + titleRow
+			})
 		}
+		START_ROW++
 	}
-	row += '</x:row>';
-	rows += row;
 	//如果合并字段存在，判断当前字段是合并字段
-	if (config.mergeCells){
-		for (i = 0; i < config.mergeCells.length; i++) {
-			var mergeCell = config.mergeCells[i];
+	if (config.mergeFields){
+		for (i = 0; i < config.mergeFields.length; i++) {
+			var mergeCell = config.mergeFields[i];
 			var mergeField=undefined,premiseField=undefined;
 			//通过合并的字段名称。转换为索引号。
 			for (k = 0; k < colsLength; k++) {
@@ -62,7 +69,7 @@ Sheet.prototype.generate = function(){
 					premiseField = k;
 				}
 				if (mergeField!=undefined&&premiseField!=undefined){
-					mergeCells.push({
+					mergeFields.push({
 						mergeField: mergeField,
 						premiseField: premiseField,
 						perMergeValue:undefined,//前合并字段值
@@ -77,17 +84,47 @@ Sheet.prototype.generate = function(){
 
 		}
 	}
+	//合并自定义的单元格
+	if (config.mergeCells){
+		for (i = 0; i < config.mergeCells.length; i++) {
+			var mergeCell = config.mergeCells[i];
+			var startCell = {
+				column: getColumnLetter(mergeCell.startCell.column + 1),
+				row: mergeCell.startCell.row + START_ROW
+			};
+			var endCell = {
+				column: getColumnLetter(mergeCell.endCell.column + 1),
+				row: mergeCell.endCell.row + START_ROW
+			}
+			sheetmergeCells.push({
+				startCell:startCell.column + startCell.row,
+				endCell:endCell.column + endCell.row
+			})
+		}
+	}
+	//first row for column caption
+	row = '<x:row r="' + (START_ROW-1) + '" spans="1:' + colsLength + '">';
+	var colStyleIndex;
+	for (k = 0; k < colsLength; k++) {
+		colStyleIndex = cols[k].captionStyleIndex || 0;
+		row += addStringCell(self, getColumnLetter(k + 1) + 1, cols[k].caption, colStyleIndex);
+		if (cols[k].width) {
+			colsWidth += '<x:col customWidth = "1" width="' + cols[k].width + '" max="' + (k + 1) + '" min="' + (k + 1) + '"/>';
+		}
+	}
+	row += '</x:row>';
+	rows += row;
 
 	//fill in data
 	var i, j, r, cellData, currRow, cellType, dataLength = data.length;
 
 	for (i = 0; i < dataLength; i++) {
 		r = data[i],
-		currRow = i + 2;
+		currRow = i + START_ROW;
 		row = '<x:row r="' + currRow + '" spans="1:' + colsLength + '">';
-
-		for (var l = 0; l < mergeCells.length; l++) {
-			var mergeCell = mergeCells[l];
+		//合并相同字段时使用===============
+		for (var l = 0; l < mergeFields.length; l++) {
+			var mergeCell = mergeFields[l];
 			var flag = true;
 			mergeCell.curMergeValue = r[mergeCell.mergeField];
 			if (mergeCell.premiseField!=undefined){
@@ -113,10 +150,11 @@ Sheet.prototype.generate = function(){
 				}
 			}
 		}
+		//=========================
 		for (j = 0; j < colsLength; j++) {
 			var flag = true;
-			for (var l = 0; l < mergeCells.length; l++) {
-				var mergeCell = mergeCells[l];
+			for (var l = 0; l < mergeFields.length; l++) {
+				var mergeCell = mergeFields[l];
 				if (mergeCell.mergeField==j&&mergeCell.span>1){
 					flag = false;
 					break;
