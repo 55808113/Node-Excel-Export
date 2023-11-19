@@ -37,22 +37,7 @@ Sheet.prototype.generate = function(){
 	}
 	//开始的行号===============
 	var START_ROW = 2
-	//是否显示标题，显示标题开始行从3开始
-	if (config.title){
-		var titleRow = 1;
-		//中间对齐
-		var titleStyleIndex = 1
-		row = '<x:row r="' + titleRow + '" spans="1:' + colsLength + '">';
-		row += addStringCell(self, getColumnLetter(0 + 1) + titleRow, config.title, titleStyleIndex);
-		row += '</x:row>';
-		rows += row;
-		//合并单元格,列大于1时才合并单元格
-		if (colsLength>1){
-			sheetmergeCells.push({
-				startCell: getColumnLetter(0 + 1) + titleRow,
-				endCell: getColumnLetter(colsLength) + titleRow
-			})
-		}
+	if (config.title) {
 		START_ROW++
 	}
 	//如果合并字段存在，判断当前字段是合并字段
@@ -102,12 +87,30 @@ Sheet.prototype.generate = function(){
 			})
 		}
 	}
+	//是否显示标题，显示标题开始行从3开始
+	if (config.title) {
+		var titleRow = 1;
+		row = '<x:row r="' + titleRow + '" spans="1:' + colsLength + '">';
+		//中间对齐
+		var titleStyleIndex = 1;
+		row += addStringCell(self, getColumnLetter(0 + 1) + titleRow, config.title, titleStyleIndex);
+		row += '</x:row>';
+		rows += row;
+		//合并单元格,列大于1时才合并单元格
+		if (colsLength>1){
+			sheetmergeCells.push({
+				startCell: getColumnLetter(0 + 1) + titleRow,
+				endCell: getColumnLetter(colsLength) + titleRow
+			})
+		}
+	}
+	var captionRow = START_ROW-1;
 	//first row for column caption
-	row = '<x:row r="' + (START_ROW-1) + '" spans="1:' + colsLength + '">';
+	row = '<x:row r="' + captionRow + '" spans="1:' + colsLength + '">';
 	var colStyleIndex;
 	for (k = 0; k < colsLength; k++) {
 		colStyleIndex = cols[k].captionStyleIndex || 0;
-		row += addStringCell(self, getColumnLetter(k + 1) + 1, cols[k].caption, colStyleIndex);
+		row += addStringCell(self, getColumnLetter(k + 1) + captionRow, cols[k].caption, colStyleIndex);
 		if (cols[k].width) {
 			colsWidth += '<x:col customWidth = "1" width="' + cols[k].width + '" max="' + (k + 1) + '" min="' + (k + 1) + '"/>';
 		}
