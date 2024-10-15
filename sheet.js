@@ -152,6 +152,18 @@ Sheet.prototype.generate = function(){
 					mergeCell.perPremiseValue = mergeCell.curPremiseValue;
 				}
 			}
+			//当最后一条数据也直接合并
+			if (i==dataLength-1){
+				var columnLetter = getColumnLetter(mergeCell.mergeField + 1);
+				var startCell = (currRow - mergeCell.span) + 1;
+				var endCell = currRow;
+				if (endCell!=startCell){
+					sheetmergeCells.push({
+						startCell:columnLetter + startCell,
+						endCell:columnLetter + endCell
+					})
+				}
+			}
 		}
 		//=========================
 		for (j = 0; j < colsLength; j++) {
