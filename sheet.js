@@ -278,10 +278,10 @@ var addStringCell = function(sheet, cellRef, value, styleIndex){
   if (typeof value ==='string'){
     value = value.replace(/&/g, "&amp;").replace(/'/g, "&apos;").replace(/>/g, "&gt;").replace(/</g, "&lt;");
   }
-  var i = sheet.shareStrings.get(value, -1);
-	if ( i< 0){
-    i = sheet.shareStrings.length;
-  	sheet.shareStrings.add(value, i);
+  var i = sheet.shareStrings.get(value);
+	if ( i === undefined){
+    i = sheet.shareStrings.size;
+  	sheet.shareStrings.set(value, i);
     sheet.convertedShareStrings += "<x:si><x:t>"+value+"</x:t></x:si>";
 	}
 	return '<x:c r="'+cellRef+'" s="'+ styleIndex + '" t="s"><x:v>'+i+'</x:v></x:c>';

@@ -1,7 +1,6 @@
 require('node-zip');
 var fs = require('fs'),
-Sheet = require('./sheet'),
-SortedMap = require('collections/sorted-map');
+Sheet = require('./sheet');
 
 Date.prototype.getJulian = function() {
 	return Math.floor((this / 86400000) - (this.getTimezoneOffset() / 1440) + 2440587.5);
@@ -99,7 +98,7 @@ exports.execute = function(config) {
 		base64: true,
 		checkCRC32: false
 	});
-	shareStrings = new SortedMap();
+	shareStrings = new Map();
 	convertedShareStrings = "";  
   
 	var configs = [];
