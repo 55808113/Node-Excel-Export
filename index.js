@@ -79,8 +79,8 @@ function generateWorkbook(configs,xlsx) {
 }
 
 function generateSharedStringsFile(xlsx){
-	if (shareStrings.length > 0) {
-		var sharedStringsFrontTmp = sharedStringsFront.replace(/\$count/g, shareStrings.length);
+	if (shareStrings.size > 0) {
+		var sharedStringsFrontTmp = sharedStringsFront.replace(/\$count/g, shareStrings.size);
 		xlsx.file("xl/sharedStrings.xml", (sharedStringsFrontTmp + convertedShareStrings + sharedStringsBack));
 	}
 	convertedShareStrings = "";
